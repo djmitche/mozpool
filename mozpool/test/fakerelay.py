@@ -114,7 +114,12 @@ class RelayBoard(object):
     def handle_commands(self, sock):
         data = ''
         while True:
-            b = sock.recv(3)
+            try:
+                b = sock.recv(3)
+            except socket.error, e:
+                if e.errno == 104:
+                    return # ignore connection reset
+                raise
             if self.delay:
                 time.sleep(self.delay)
             if not len(b):
