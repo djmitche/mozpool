@@ -43,41 +43,7 @@ var UpdateableCollection = Backbone.Collection.extend({
             // add id columns, based on the names
             response = $.map(response, function(name) { return { name: name, id: name }; });
         }
-
-        var old_ids = self.map(function(b) { return b.get('id'); });
-        var new_ids = _.map(response, function (b) { return b.id; });
-
-        // calculate added and removed elements from differences
-        if (self.removeWhenMerging) {
-            _.each(_.difference(old_ids, new_ids), function (id) {
-                self.remove(self.get(id));
-            });
-        }
-
-        if (self.addWhenMerging) {
-            _.each(_.difference(new_ids, old_ids), function (id) {
-                var attrs = response[_.indexOf(new_ids, id)];
-                self.push(new self.model(attrs), {'sort': false});
-            });
-        }
-
-        // then any updates to the individual models that haven't been added or
-        // removed
-        if (self.updateWhenMerging) {
-            _.each(_.intersection(new_ids, old_ids), function (id) {
-                var attrs = response[_.indexOf(new_ids, id)];
-                var model = self.get(id);
-                model.set(attrs);
-            });
-        }
-
-        // sort, since we added things without sorting.
-        if (self.comparator) {
-            self.sort();
-        }
-
-        // this just instructs the fetch/add to not anything else:
-        return [];
+        return response;
     },
 
     // request that the collection be updated soon.
@@ -102,7 +68,9 @@ var UpdateableCollection = Backbone.Collection.extend({
         this.updateRequested = false;
 
         this.fetch({
-            add: true,
+            add: this.addWhenMerging,
+            remove: this.removeWhenMerging,
+            update: this.updateWhenMerging,
             success: function() {
                 var calls = self.callWhenUpdated;
                 self.callWhenUpdated = [];

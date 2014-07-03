@@ -34,36 +34,34 @@ var TableView = Backbone.View.extend({
         // calculate the columns for the table; this is coordinated with
         // the data for the table in the view below
 
-        // hidden id column
-        var aoColumns = [];
+        var columns = [];
 
         // column storing the id
-        aoColumns.push({ bVisible: false });
+        columns.push({ visible: false });
 
         // data columns
-        aoColumns = aoColumns.concat(
+        columns = columns.concat(
             this.columns.map(function(col) {
-                var rv = { sTitle: col.title, sClass: 'col-' + col.id };
+                var rv = { title: col.title, className: 'col-' + col.id };
                 if (col.renderFn) {
-                    rv.bUseRendered = false;
-                    rv.fnRender = function(oObj) {
-                        var model = self.collection.get(oObj.aData[0]);
+                    rv.render = function(data, type, row) {
+                        var model = self.collection.get(row[0]);
                         return self[col.renderFn].apply(self, [ model ]);
                     };
                 }
-                if (col.sClass) {
-                    rv.sClass = col.sClass;
+                if (col.className) {
+                    rv.className = col.className;
                 }
                 return rv;
             }));
 
         // create an empty table
         var dtArgs = {
-            aoColumns: aoColumns,
-            bJQueryUI: true,
-            bAutoWidth: false,
-            bPaginate: false,
-            bInfo: false // hide table info
+            columns: columns,
+            jQueryUI: true,
+            autoWidth: false,
+            paginate: false,
+            info: false // hide table info
         };
 
         this.dataTable = this.$('table').dataTable(dtArgs);
@@ -76,7 +74,7 @@ var TableView = Backbone.View.extend({
         this.$('table').change(this.domObjectChanged);
 
         // add a 'redraw' method to the dataTable, debounced so we don't redraw too often
-        this.dataTable.redraw = _.debounce(function () { self.dataTable.fnDraw(false); }, 100);
+        this.dataTable.redraw = _.debounce(function () { self.dataTable.draw(false); }, 100);
 
         // now simulate an "add" for every element currently in the model
         this.collection.each(function(m) { self.modelAdded(m); });
@@ -104,16 +102,6 @@ var TableView = Backbone.View.extend({
                 v.row_index--;
             }
         });
-    },
-
-    // convert a TR element (not a jquery selector) to its position in the table
-    getTablePositionFromTrElement: function(elt) {
-        // this gets the index in the table data
-        var data_idx = this.dataTable.fnGetPosition(elt);
-
-        // now we search for that index in aiDisplayMaster to find out where it's displayed
-        var aiDisplayMaster = this.dataTable.fnSettings().aiDisplayMaster;
-        return aiDisplayMaster.indexOf(data_idx);
     },
 
     checkboxClicked: function (e) {
@@ -250,7 +238,7 @@ var DeviceTableView = TableView.extend({
 var LifeguardTableView = DeviceTableView.extend({
     columns: [
         { id: "selected", title: '', bSortable: false,
-            sClass: 'rowcheckbox', renderFn: "renderSelected" },
+            className: 'rowcheckbox', renderFn: "renderSelected" },
         { id: "name", title: "Name" },
         { id: "state", title: "State", renderFn: "renderState"},
         { id: "image", title: "Image" , renderFn: "renderImage"},
@@ -283,7 +271,7 @@ var LifeguardTableView = DeviceTableView.extend({
 var BMMTableView = DeviceTableView.extend({
     columns: [
         { id: "selected", title: '', bSortable: false,
-            sClass: 'rowcheckbox', renderFn: "renderSelected" },
+            className: 'rowcheckbox', renderFn: "renderSelected" },
         { id: "fqdn", title: "FQDN",
             renderFn: "renderFqdn" },
         { id: "environment", title: "Environment" },
@@ -311,7 +299,7 @@ var RequestTableView = TableView.extend({
 
     columns: [
         { id: "selected", title: '', bSortable: false,
-            sClass: 'rowcheckbox', renderFn: "renderSelected" },
+            className: 'rowcheckbox', renderFn: "renderSelected" },
         { id: "id", title: "ID" },
         { id: "requested_device", title: "Requested Device",
             renderFn: "renderRequested" },
@@ -388,7 +376,7 @@ var TableRowView = Backbone.View.extend({
         _.bindAll(this, 'modelChanged');
         _.bindAll(this, 'modelRemoved');
 
-        // set up the row datal put the id in the hidden column 0
+        // set up the row data and put the id in the hidden column 0
         var model = this.model;
         var row = [ model.id ];
         row = row.concat(
@@ -397,7 +385,7 @@ var TableRowView = Backbone.View.extend({
             }));
 
         // insert into the table and store the index
-        var row_indexes = this.dataTable.fnAddData(row, false);
+        var row_indexes = this.dataTable.push(row, false);
         this.row_index = row_indexes[0];
 
         this.model.bind('change', this.modelChanged);
